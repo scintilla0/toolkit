@@ -10,9 +10,10 @@ import org.dbflute.cbean.result.PagingResultBean;
 import org.dbflute.dbmeta.AbstractEntity;
 import org.springframework.core.env.Environment;
 import org.springframework.util.CollectionUtils;
+import person.scintilla.toolkit.internal.ToolkitConfigManager;
 
 /**
- * @version 0.1.1 2025-08-19
+ * @version 0.1.2 2025-09-26
  */
 public class PagingForm extends BaseForm {
 
@@ -30,8 +31,8 @@ public class PagingForm extends BaseForm {
 
 	{
 		Environment environment = getApplicationBean(Environment.class);
-		this.setPageSize(Integer.parseInt(environment.getProperty("springboot.pj.paging.page-size")));
-		this.setDisplayPageCount(Integer.parseInt(environment.getProperty("springboot.pj.paging.display-page-count")));
+		this.setPageSize(Integer.parseInt(environment.getProperty(ToolkitConfigManager.getConfig().getPageSizePropName())));
+		this.setDisplayPageCount(Integer.parseInt(environment.getProperty(ToolkitConfigManager.getConfig().getDisplayPageCountPropName())));
 	}
 
 	public void clearPagingInfo() {

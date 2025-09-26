@@ -27,6 +27,8 @@ import org.thymeleaf.util.ArrayUtils;
 import person.scintilla.toolkit.annotation.FieldRule;
 import person.scintilla.toolkit.annotation.FieldRule.ConstraintType;
 import person.scintilla.toolkit.annotation.RequireListEntity;
+import person.scintilla.toolkit.internal.AnnotationValueResolver;
+import person.scintilla.toolkit.internal.ToolkitConfigManager;
 import person.scintilla.toolkit.utils.DateTimeUtils;
 import person.scintilla.toolkit.utils.DecimalUtils;
 import person.scintilla.toolkit.utils.ReflectiveUtils;
@@ -35,7 +37,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.0 - 2025-08-15
+ * @version 1.0.1 - 2025-09-26
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
@@ -64,8 +66,8 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 	@Override
 	public boolean isValid(List<?> list, ConstraintValidatorContext context) {
 		if (CollectionUtils.isEmpty(list)) {
-			if (this.annotation.require() == true) {
-				String messageCode = this.annotation.message().replaceAll("^[{]", "").replaceAll("[}]$", "");
+			if (this.annotation.require()) {
+				String messageCode = AnnotationValueResolver.resolve(this.annotation.message()).replaceAll("^[{]", "").replaceAll("[}]$", "");
 				String message = new FieldValidator(null).getMessage(messageCode, Collections.singletonMap("name", this.annotation.name()));
 				addViolation(context, message);
 			}
@@ -163,12 +165,12 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 
 	public static class FieldValidator {
 
-		private static final String REPEAT = "EC000A008";
-		private static final String EMPTY = "E000A001";
-		private static final String LENGTH = "E000A002";
-		private static final String PATTERN_NUMBER = "E000A003";
-		private static final String PATTERN_ALPHA_NUM = "E000A005";
-		private static final String PATTERN_ALPHA_NUM_PUNC = "E000A023";
+		private static final String REPEAT = ToolkitConfigManager.getConfig().getRepeatErrorCode();
+		private static final String EMPTY = ToolkitConfigManager.getConfig().getEmptyErrorCode();
+		private static final String LENGTH = ToolkitConfigManager.getConfig().getLengthErrorCode();
+		private static final String PATTERN_NUMBER = ToolkitConfigManager.getConfig().getPatternNumberErrorCode();
+		private static final String PATTERN_ALPHA_NUM = ToolkitConfigManager.getConfig().getPatternAlphaNumErrorCode();
+		private static final String PATTERN_ALPHA_NUM_PUNC = ToolkitConfigManager.getConfig().getPatternAlphaNumPuncErrorCode();
 		private static final String ALPHA_NUM_REGEX_PATTERN = "^[a-zA-Z0-9]+$";
 		private static final String ALPHA_NUM_PUNC_REGEX_PATTERN = "^[a-zA-Z0-9`!@#$%^&*()-=~_+\\[\\]\\{}|;':\",./<>?]+$";
 

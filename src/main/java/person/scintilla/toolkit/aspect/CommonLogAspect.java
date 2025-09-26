@@ -19,10 +19,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
 import person.scintilla.toolkit.utils.DecimalUtils;
+import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils.
- * @version 0.1.0 2025-09-25
+ * @version 0.1.1 2025-09-26
  */
 @Aspect
 @Component
@@ -60,7 +61,7 @@ public class CommonLogAspect extends BaseAspect {
 				logger.info(endLogContent);
 			} else {
 				if (result instanceof String) {
-					String resultString = result != null ? (String) result : "";
+					String resultString = StringUtils.wrapBlank(result);
 					String resultStringLower = resultString.toLowerCase(Locale.getDefault());
 					if (resultStringLower.startsWith("redirect:") || resultStringLower.startsWith("forward:")) {
 						if (hideUrlPrimaryKey) {
@@ -68,7 +69,7 @@ public class CommonLogAspect extends BaseAspect {
 							for (String part : resultString.split("/")) {
 								resultStringBuilder.append("/").append(DecimalUtils.isLong(part) ? "{}" : part);
 							}
-							resultString = resultStringBuilder.toString().substring(1);
+							resultString = resultStringBuilder.substring(1);
 						}
 						logger.info(endLogContent + " " + resultString);
 					} else {

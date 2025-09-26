@@ -14,7 +14,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
 /**
- * @version 0.1.0 2025-09-25
+ * @version 0.1.1 2025-09-26
  */
 public class BaseAspect {
 
@@ -29,7 +29,7 @@ public class BaseAspect {
 	}
 
 	protected Logger fetchLogger(Class<?> loggerClass) {
-		return loggerMap.computeIfAbsent(loggerClass.getName(), key -> LoggerFactory.getLogger(key));
+		return loggerMap.computeIfAbsent(loggerClass.getName(), LoggerFactory::getLogger);
 	}
 
 	protected Method getMethod(JoinPoint joinPoint) {

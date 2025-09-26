@@ -63,7 +63,7 @@ public @interface FieldRule {
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		private String constraintName;
+		private final String constraintName;
 
 		private ConstraintType(String constraintName) {
 			this.constraintName = constraintName;

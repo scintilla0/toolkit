@@ -14,9 +14,11 @@ import person.scintilla.toolkit.form.BaseForm;
 public @interface Referer {
 
 	@AliasFor("value")
-	String path() default BaseForm.DEFAULT_REFERER;
+	String path() default DEFAULT_REFERER;
 
 	@AliasFor("path")
-	String value() default BaseForm.DEFAULT_REFERER;
+	String value() default DEFAULT_REFERER;
+
+	String DEFAULT_REFERER = "/";
 
 }

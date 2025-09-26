@@ -20,7 +20,7 @@ public @interface RequireListEntity {
 	@Deprecated
 	Class<? extends Payload>[] payload() default {};
 
-	String message() default "{E000A001}";
+	String message() default "${listEmptyErrorCode}";
 
 	String name();
 

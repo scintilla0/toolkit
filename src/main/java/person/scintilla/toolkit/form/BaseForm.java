@@ -40,6 +40,7 @@ import person.scintilla.toolkit.annotation.NonSessionField;
 import person.scintilla.toolkit.annotation.PrimaryKeyField;
 import person.scintilla.toolkit.annotation.Referer;
 import person.scintilla.toolkit.annotation.ResultListField;
+import person.scintilla.toolkit.internal.ToolkitConfigManager;
 import person.scintilla.toolkit.utils.DateTimeUtils;
 import person.scintilla.toolkit.utils.DecimalUtils;
 import person.scintilla.toolkit.utils.ReflectiveUtils;
@@ -48,11 +49,11 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.16 2025-09-25
+ * @version 0.1.17 2025-09-26
  */
 public class BaseForm implements Serializable {
 
-	protected static final String DEFAULT_DATE_FORMAT = "yyyy/MM/dd";
+	protected static final String DEFAULT_DATE_FORMAT = ToolkitConfigManager.getConfig().getDefaultDateFormat();
 
 	// project exclusive fields
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -339,7 +340,7 @@ public class BaseForm implements Serializable {
 							if (!fieldName.contains("[")) {
 								object = ReflectiveUtils.getField(this, fieldName, Object.class);
 							} else {
-								int index = Integer.valueOf(fieldName.substring(fieldName.indexOf("[") + 1, fieldName.indexOf("]")));
+								int index = Integer.parseInt(fieldName.substring(fieldName.indexOf("[") + 1, fieldName.indexOf("]")));
 								fieldName = fieldName.substring(0, fieldName.indexOf("["));
 								Class<?> objectClass = ReflectiveUtils.fetchField(object.getClass(), fieldName).getType();
 								Object field = ReflectiveUtils.getField(object, fieldName, Object.class);
@@ -458,8 +459,8 @@ public class BaseForm implements Serializable {
 	private static final Map<Class<? extends Annotation>, Map<Class<? extends BaseForm>, Field>> UNIQUE_ANNOTATED_FIELD_MAP = new HashMap<>();
 	private static final List<String> SET_DEFAULT_FIELD_INITIATOR_CLASS_NAMES = Collections.unmodifiableList(Arrays.asList("Controller", "Service", "Form"));
 	private static final List<Class<?>> TOP_SUPER_CLASSES = Collections.unmodifiableList(Arrays.asList(Object.class, BaseForm.class));
-	// private static final List<String> LIKE_OPTION_LIST = Collections.unmodifiableList(Arrays.asList("Prefix", "Suffix", "Contain"));
-	public static final String DEFAULT_REFERER = "/";
+	private static final List<String> LIKE_OPTION_LIST = Collections.unmodifiableList(Arrays.asList("Prefix", "Suffix", "Contain"));
+	private static final String DEFAULT_REFERER = Referer.DEFAULT_REFERER;
 	private static final int DEFAULT_INIT_OP_INDEX = -1;
 	private static final long serialVersionUID = 1L;
 
@@ -646,7 +647,7 @@ public class BaseForm implements Serializable {
 					}
 				}
 			} else {
-				int index = Integer.valueOf(fieldName.substring(fieldName.indexOf("[") + 1, fieldName.indexOf("]")));
+				int index = Integer.parseInt(fieldName.substring(fieldName.indexOf("[") + 1, fieldName.indexOf("]")));
 				fieldName = fieldName.substring(0, fieldName.indexOf("["));
 				Class<?> fileFieldClass = ReflectiveUtils.fetchField(object.getClass(), fieldName).getType();
 				Object fileContainer = ReflectiveUtils.getField(object, fieldName, Object.class);

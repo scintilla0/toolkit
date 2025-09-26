@@ -14,7 +14,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtil, DateTimeUtil.
- * @version 0.2.4 - 2025-09-25
+ * @version 0.2.5 - 2025-09-26
  */
 public class DBConstantsCore {
 
@@ -105,7 +105,7 @@ public class DBConstantsCore {
 
 		public static String retrieveOptionText(Map<?, String> optionMap, Object fieldValue) {
 			String fieldValueResult = optionMap.entrySet().stream().filter(entry -> entry.getKey().equals(StringUtils.wrapBlank(fieldValue)) ||
-					DecimalUtils.haveSameValue(entry.getKey(), fieldValue)).findAny().map(entry -> entry.getValue()).orElse(null);
+					DecimalUtils.haveSameValue(entry.getKey(), fieldValue)).findAny().map(Map.Entry::getValue).orElse(null);
 			return fieldValueResult;
 		}
 
@@ -138,20 +138,10 @@ public class DBConstantsCore {
 				String text = DecimalUtils.format(number, textFormat);
 				result = (result == null) ? create(value, text) : result.and(value, text);
 			}
-			return result.build();
+			return (result == null) ? new Option<String>().build() : result.build();
 		}
 
-		public static Map<String, String> sequenceHourOptionMap(int startTime, int endTime, String valueFormat, String textFormat) {
-			Option<String> result = null;
-			for (int number = startTime; number <= endTime; number ++) {
-				String value = DecimalUtils.format(number, StringUtils.ifEmptyThen(valueFormat, "0"));
-				String text = DecimalUtils.format(number, textFormat);
-				result = (result == null) ? create(value, text) : result.and(value, text);
-			}
-			return result.build();
-		}
-
-		private Map<KeyType, String> optionMap;
+		private final Map<KeyType, String> optionMap;
 
 		public Option() {
 			this.optionMap = new LinkedHashMap<>();

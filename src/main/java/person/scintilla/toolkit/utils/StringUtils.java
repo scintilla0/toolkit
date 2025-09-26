@@ -32,7 +32,7 @@ public class StringUtils {
 	}
 
 	public static String wrapNull(String source) {
-		return isEmpty(source) ? null : source.toString();
+		return isEmpty(source) ? null : source;
 	}
 
 	public static String ifEmptyThen(String source1, String source2) {

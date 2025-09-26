@@ -21,7 +21,7 @@ import org.springframework.validation.ObjectError;
 import person.scintilla.toolkit.annotation.NonSessionField;
 
 /**
- * @version 0.3.1 - 2025-08-21
+ * @version 0.3.2 - 2025-09-26
  */
 public class DialogForm extends BaseForm {
 
@@ -120,7 +120,7 @@ public class DialogForm extends BaseForm {
 				this.setStatus(0);
 			} else {
 				if ((data instanceof Collection && ((Collection<?>) data).isEmpty())
-						|| (data instanceof Map && ((Map<?, ?>) data).entrySet().isEmpty())){
+						|| (data instanceof Map && ((Map<?, ?>) data).isEmpty())) {
 					this.setStatus(2);
 				} else {
 					this.setStatus(0);
