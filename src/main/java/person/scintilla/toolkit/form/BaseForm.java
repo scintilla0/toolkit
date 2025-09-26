@@ -49,14 +49,9 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.17 2025-09-26
+ * @version 0.1.18 2025-09-26
  */
 public class BaseForm implements Serializable {
-
-	protected static final String DEFAULT_DATE_FORMAT = ToolkitConfigManager.getConfig().getDefaultDateFormat();
-
-	// project exclusive fields
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	private String screenId;
 	private String messageKey;
@@ -453,6 +448,8 @@ public class BaseForm implements Serializable {
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	protected static final String DEFAULT_DATE_FORMAT = ToolkitConfigManager.getConfig().getDefaultDateFormat();
 
 	private final String INIT_OP_INDEX_SESSION_KEY = "_init_op_index_" + this.getClass().getName();
 
