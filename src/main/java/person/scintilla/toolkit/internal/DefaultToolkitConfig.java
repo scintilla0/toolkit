@@ -14,12 +14,12 @@ public class DefaultToolkitConfig implements ToolkitConfig {
 
 	@Override
 	public String getPageSizePropName() {
-		return "springboot.paging.page-size";
+		return "spring.paging.page-size";
 	}
 
 	@Override
 	public String getDisplayPageCountPropName() {
-		return "springboot.paging.display-page-count";
+		return "spring.paging.display-page-count";
 	}
 
 	@Override

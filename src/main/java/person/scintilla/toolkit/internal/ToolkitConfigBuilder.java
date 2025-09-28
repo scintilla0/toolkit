@@ -16,7 +16,7 @@ public class ToolkitConfigBuilder {
 	private String patternAlphaNumErrorCode = defaultToolkitConfig.getPatternAlphaNumErrorCode();
 	private String patternAlphaNumPuncErrorCode = defaultToolkitConfig.getPatternAlphaNumPuncErrorCode();
 
-	public ToolkitConfigBuilder setDeleteFlagName(final String deleteFlagName) {
+	public ToolkitConfigBuilder deleteFlagName(final String deleteFlagName) {
 		this.deleteFlagName = deleteFlagName;
 		return this;
 	}
