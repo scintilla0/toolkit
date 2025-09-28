@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import org.hibernate.validator.internal.engine.messageinterpolation.InterpolationTermType;
 import org.hibernate.validator.internal.engine.messageinterpolation.parser.TokenCollector;
@@ -19,9 +20,10 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
 import person.scintilla.toolkit.annotation.NonSessionField;
+import person.scintilla.toolkit.utils.StringUtils;
 
 /**
- * @version 0.3.2 - 2025-09-26
+ * @version 0.3.3 - 2025-09-28
  */
 public class DialogForm extends BaseForm {
 
@@ -46,6 +48,7 @@ public class DialogForm extends BaseForm {
 	}
 
 	public void addValidateError(String field, String message) {
+		Objects.requireNonNull(field);
 		if (!message.equals(this.getValidateErrors().get(field))) {
 			this.getValidateErrors().put(field, message);
 		}
@@ -70,6 +73,7 @@ public class DialogForm extends BaseForm {
 	}
 
 	private String getMessage(String messageCode, Map<String, String> mapArgs, String... arrayArgs) {
+		Objects.requireNonNull(messageCode);
 		String message = this.getMessageSource().getMessage(messageCode, null, Locale.getDefault());
 		TokenIterator tokenIterator = new TokenIterator(new TokenCollector(message, InterpolationTermType.PARAMETER).getTokenList());
 		while (tokenIterator.hasMoreInterpolationTerms()) {
@@ -83,22 +87,23 @@ public class DialogForm extends BaseForm {
 	}
 
 	public void wrapErrorMessage(BindingResult bindingResult) {
+		Objects.requireNonNull(bindingResult);
 		MessageSource messageSource = getMessageSource();
-		if (bindingResult != null && bindingResult.hasErrors()) {
+		if (bindingResult.hasErrors()) {
 			for (FieldError error : bindingResult.getFieldErrors()) {
 				String message = error.getDefaultMessage();
-				if (message == null) {
+				if (message == null && error.getCode() != null) {
 					message = messageSource.getMessage(error.getCode(), null, Locale.getDefault());
 				}
-				this.addValidateError(error.getField(), message);
+				this.addValidateError(error.getField(), StringUtils.wrapBlank(message));
 				this.setStatus(1);
 			}
 			for (ObjectError error : bindingResult.getGlobalErrors()) {
 				String message = error.getDefaultMessage();
-				if (message == null) {
+				if (message == null && error.getCode() != null) {
 					message = messageSource.getMessage(error.getCode(), null, Locale.getDefault());
 				}
-				this.addValidateError("globalError_" + bindingResult.getGlobalErrors().indexOf(error), message);
+				this.addValidateError("globalError_" + bindingResult.getGlobalErrors().indexOf(error), StringUtils.wrapBlank(message));
 				this.setStatus(1);
 			}
 		}
@@ -197,6 +202,7 @@ public class DialogForm extends BaseForm {
 	}
 
 	public static DialogForm getValidateResult(BindingResult bindingResult) {
+		Objects.requireNonNull(bindingResult);
 		DialogForm result = new DialogForm();
 		if (bindingResult.hasErrors()) {
 			result.wrapErrorMessage(bindingResult);

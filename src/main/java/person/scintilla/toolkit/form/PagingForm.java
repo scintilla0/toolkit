@@ -3,6 +3,7 @@ package person.scintilla.toolkit.form;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -14,7 +15,7 @@ import person.scintilla.toolkit.internal.ToolkitConfigManager;
 import person.scintilla.toolkit.utils.DecimalUtils;
 
 /**
- * @version 0.1.3 2025-09-28
+ * @version 0.1.4 2025-09-28
  */
 public class PagingForm extends BaseForm {
 
@@ -45,6 +46,7 @@ public class PagingForm extends BaseForm {
 	}
 
 	public void pushPagingInfoFixPosition(PagingResultBean<? extends AbstractEntity> pagedResultList) {
+		Objects.requireNonNull(pagedResultList);
 		this.setAllRecordCount(pagedResultList.getAllRecordCount());
 		this.setAllPageCount(pagedResultList.getAllPageCount());
 		if (this.getAllRecordCount() == 0) {
@@ -56,7 +58,7 @@ public class PagingForm extends BaseForm {
 		int endPage = Math.min(pageNumber.add(halfSize).setScale(0, RoundingMode.CEILING).intValue(), this.getAllPageCount());
 		List<Integer> pageList = IntStream.rangeClosed(beginPage, endPage).boxed().collect(Collectors.toList());
 		this.setDisplayPageList(pageList);
-		}
+	}
 
 	public void pushPagingInfoFixCount(PagingResultBean<? extends AbstractEntity> pagedResultList) {
 		pushPagingInfoFixPosition(pagedResultList);

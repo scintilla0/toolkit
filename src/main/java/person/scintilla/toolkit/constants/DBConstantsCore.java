@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.dbflute.dbmeta.accessory.DomainEntity;
 import org.springframework.util.CollectionUtils;
@@ -15,7 +16,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtil, DateTimeUtil.
- * @version 0.2.7 - 2025-09-26
+ * @version 0.2.8 - 2025-09-28
  */
 public class DBConstantsCore {
 
@@ -73,12 +74,14 @@ public class DBConstantsCore {
 		private static final String DELETE_FLAG_NAME = ToolkitConfigManager.getConfig().getDeleteFlagName();
 
 		public static <Entity extends DomainEntity> Entity deletedEntity(Class<Entity> entityClass) {
+			Objects.requireNonNull(entityClass);
 			Entity entity = ReflectiveUtils.createInstance(entityClass);
 			ReflectiveUtils.setField(entity, DELETE_FLAG_NAME, DELETED);
 			return entity;
 		}
 
 		public static <Entity extends DomainEntity> Entity _deletedEntity(Class<Entity> entityClass) {
+			Objects.requireNonNull(entityClass);
 			Entity entity = ReflectiveUtils.createInstance(entityClass);
 			ReflectiveUtils.setField(entity, DELETE_FLAG_NAME, _DELETED);
 			return entity;
@@ -89,6 +92,8 @@ public class DBConstantsCore {
 	public static class Option<KeyType> {
 
 		public static String retrieveOptionText(Collection<Object> optionCollection, Map<String, String> optionFieldNameMap, Object fieldValue) {
+			Objects.requireNonNull(optionCollection);
+			Objects.requireNonNull(optionFieldNameMap);
 			String fieldValueResult = StringUtils.wrapBlank(fieldValue);
 			if (!CollectionUtils.isEmpty(optionCollection)) {
 				for (Map.Entry<String, String> nameEntry : optionFieldNameMap.entrySet()) {
@@ -101,9 +106,7 @@ public class DBConstantsCore {
 							return fieldValueResult;
 						}
 					} catch (RuntimeException exception) {
-						if (exception.getCause() instanceof NoSuchFieldException) {
-							continue;
-						} else {
+						if (!(exception.getCause() instanceof NoSuchFieldException)) {
 							throw exception;
 						}
 					}
@@ -113,6 +116,7 @@ public class DBConstantsCore {
 		}
 
 		public static String retrieveOptionText(Map<?, String> optionMap, Object fieldValue) {
+			Objects.requireNonNull(optionMap);
 			String fieldValueResult = optionMap.entrySet().stream().filter(entry -> entry.getKey().equals(StringUtils.wrapBlank(fieldValue)) ||
 					DecimalUtils.haveSameValue(entry.getKey(), fieldValue)).findAny().map(Map.Entry::getValue).orElse(null);
 			return fieldValueResult;

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -34,7 +35,10 @@ import org.dbflute.outsidesql.typed.TypedSelectPmb;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.ui.Model;
 import org.springframework.util.CollectionUtils;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,7 +59,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.19 2025-09-26
+ * @version 0.1.20 2025-09-28
  */
 public class BaseForm implements Serializable {
 
@@ -119,6 +123,7 @@ public class BaseForm implements Serializable {
 	}
 
 	protected <BeanType> BeanType getApplicationBean(Class<BeanType> beanClass) {
+		Objects.requireNonNull(beanClass);
 		return SpringContextUtils.getApplicationContext().getBean(beanClass);
 	}
 
@@ -283,6 +288,7 @@ public class BaseForm implements Serializable {
 	 * @param pmbClass Target class of the specified PMB entity.
 	 */
 	public <Behavior, Entity> TypedSelectPmb<Behavior, Entity> generatePMB(Class<? extends TypedSelectPmb<Behavior, Entity>> pmbClass) {
+		Objects.requireNonNull(pmbClass);
 		TypedSelectPmb<Behavior, Entity> pmb = ReflectiveUtils.createInstance(pmbClass);
 		List<String> pmbFieldNameList = Arrays.stream(pmbClass.getSuperclass().getDeclaredFields()).map(Field::getName)
 				.filter(fieldName -> fieldName.startsWith("_")).collect(Collectors.toList());
@@ -356,12 +362,20 @@ public class BaseForm implements Serializable {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	public BindingResult generateBindingResult(String formName, Model model) {
+		Objects.requireNonNull(formName);
+		Objects.requireNonNull(model);
+		BeanPropertyBindingResult result = new BeanPropertyBindingResult(this, formName);
+		model.addAttribute("org.springframework.validation.BindingResult." + formName, result);
+		return result;
+	}
+
 	/**
 	 * Create a specified domain entity and copy all field values.
 	 * @param targetClass Target class of the specified domain entity.
 	 */
 	public <TargetType> TargetType createDomainEntity(Class<TargetType> targetClass) {
-		return BaseForm.createDomainEntity(this, targetClass);
+		return createDomainEntity(this, targetClass);
 	}
 
 	/**
@@ -369,6 +383,7 @@ public class BaseForm implements Serializable {
 	 * @param request Target request to extractFrom.
 	 */
 	public void extractMultipartFile(MultipartHttpServletRequest request) throws Exception {
+		Objects.requireNonNull(request);
 		for (Entry<String, List<MultipartFile>> entry : request.getMultiFileMap().entrySet()) {
 			for (int fileIndex = 0; fileIndex < entry.getValue().size(); fileIndex ++) {
 				MultipartFile file = entry.getValue().get(fileIndex);
@@ -451,6 +466,8 @@ public class BaseForm implements Serializable {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public static <TargetType> TargetType createDomainEntity(Object dataEntity, Class<TargetType> targetClass) {
+		Objects.requireNonNull(dataEntity);
+		Objects.requireNonNull(targetClass);
 		TargetType entity = ReflectiveUtils.createInstance(targetClass);
 		Class<?> superTargetClass = ReflectiveUtils.matchClass(targetClass, AbstractEntity.class) ? targetClass.getSuperclass() : targetClass;
 		for (Field field : (dataEntity instanceof AbstractEntity ? dataEntity.getClass().getSuperclass() : dataEntity.getClass()).getDeclaredFields()) {
