@@ -16,7 +16,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtil, DateTimeUtil.
- * @version 0.2.8 - 2025-09-28
+ * @version 0.2.9 - 2025-09-28
  */
 public class DBConstantsCore {
 
@@ -140,18 +140,39 @@ public class DBConstantsCore {
 			return create(Common.UNCHECKED, option0Text).and(Common.CHECKED, option1Text).build();
 		}
 
-		public static Map<String, String> sequenceOptionMap(int beginNumber, int endNumber, String textFormat) {
-			return sequenceOptionMap(beginNumber, endNumber, null, textFormat);
+		public static Map<String, String> _singularOptionMap() {
+			return _singularOptionMap("");
+		}
+
+		public static Map<String, String> _singularOptionMap(String optionText) {
+			return create(Common._CHECKED, optionText).build();
+		}
+
+		public static Map<String, String> _binaryOptionMapA(String option1Text, String option0Text) {
+			return create(Common._CHECKED, option1Text).and(Common._UNCHECKED, option0Text).build();
+		}
+
+		public static Map<String, String> _binaryOptionMapB(String option0Text, String option1Text) {
+			return create(Common._UNCHECKED, option0Text).and(Common._CHECKED, option1Text).build();
+		}
+
+		public static Map<Integer, String> sequenceOptionMap(int beginNumber, int endNumber, String textFormat) {
+			Option<Integer> result = new Option<>();
+			for (int number = beginNumber; number <= endNumber; number ++) {
+				String text = DecimalUtils.format(number, textFormat);
+				result = result.and(number, text);
+			}
+			return result.build();
 		}
 
 		public static Map<String, String> sequenceOptionMap(int beginNumber, int endNumber, String valueFormat, String textFormat) {
-			Option<String> result = null;
+			Option<String> result = new Option<>();
 			for (int number = beginNumber; number <= endNumber; number ++) {
 				String value = DecimalUtils.format(number, StringUtils.ifEmptyThen(valueFormat, "0"));
 				String text = DecimalUtils.format(number, textFormat);
-				result = (result == null) ? create(value, text) : result.and(value, text);
+				result = result.and(value, text);
 			}
-			return (result == null) ? new Option<String>().build() : result.build();
+			return result.build();
 		}
 
 		private final Map<KeyType, String> optionMap;
