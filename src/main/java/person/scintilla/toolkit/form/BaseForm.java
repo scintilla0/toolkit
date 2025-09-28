@@ -59,7 +59,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.20 2025-09-28
+ * @version 0.1.21 2025-09-28
  */
 public class BaseForm implements Serializable {
 
@@ -123,8 +123,7 @@ public class BaseForm implements Serializable {
 	}
 
 	protected <BeanType> BeanType getApplicationBean(Class<BeanType> beanClass) {
-		Objects.requireNonNull(beanClass);
-		return SpringContextUtils.getApplicationContext().getBean(beanClass);
+		return SpringContextUtils.getBean(beanClass);
 	}
 
 	protected HttpServletRequest fetchRequest() {

@@ -37,7 +37,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.2 - 2025-09-28
+ * @version 1.0.3 - 2025-09-28
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
@@ -455,7 +455,7 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 		}
 
 		private MessageSource getMessageSource() {
-			return SpringContextUtils.getApplicationContext().getBean(MessageSource.class);
+			return SpringContextUtils.getBean(MessageSource.class);
 		}
 
 	}
