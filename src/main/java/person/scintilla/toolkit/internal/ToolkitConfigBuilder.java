@@ -4,6 +4,7 @@ public class ToolkitConfigBuilder {
 
 	private final ToolkitConfig defaultToolkitConfig = new DefaultToolkitConfig();
 
+	private String deleteFlagName = defaultToolkitConfig.getDeleteFlagName();
 	private String defaultDateFormat = defaultToolkitConfig.getDefaultDateFormat();
 	private String pageSizePropName = defaultToolkitConfig.getPageSizePropName();
 	private String displayPageCountPropName = defaultToolkitConfig.getDisplayPageCountPropName();
@@ -14,6 +15,11 @@ public class ToolkitConfigBuilder {
 	private String patternNumberErrorCode = defaultToolkitConfig.getPatternNumberErrorCode();
 	private String patternAlphaNumErrorCode = defaultToolkitConfig.getPatternAlphaNumErrorCode();
 	private String patternAlphaNumPuncErrorCode = defaultToolkitConfig.getPatternAlphaNumPuncErrorCode();
+
+	public ToolkitConfigBuilder setDeleteFlagName(final String deleteFlagName) {
+		this.deleteFlagName = deleteFlagName;
+		return this;
+	}
 
 	public ToolkitConfigBuilder defaultDateFormat(String defaultDateFormat) {
 		this.defaultDateFormat = defaultDateFormat;
@@ -67,6 +73,11 @@ public class ToolkitConfigBuilder {
 
 	public ToolkitConfig build() {
 		return new ToolkitConfig() {
+
+			@Override
+			public String getDeleteFlagName() {
+				return deleteFlagName;
+			}
 
 			@Override
 			public String getDefaultDateFormat() {

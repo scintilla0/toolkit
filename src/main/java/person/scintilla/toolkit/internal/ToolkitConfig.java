@@ -2,6 +2,8 @@ package person.scintilla.toolkit.internal;
 
 public interface ToolkitConfig {
 
+	String getDeleteFlagName();
+
 	String getDefaultDateFormat();
 
 	String getPageSizePropName();

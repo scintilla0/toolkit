@@ -8,13 +8,14 @@ import java.util.Map;
 import org.dbflute.dbmeta.accessory.DomainEntity;
 import org.springframework.util.CollectionUtils;
 
+import person.scintilla.toolkit.internal.ToolkitConfigManager;
 import person.scintilla.toolkit.utils.DecimalUtils;
 import person.scintilla.toolkit.utils.ReflectiveUtils;
 import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtil, DateTimeUtil.
- * @version 0.2.5 - 2025-09-26
+ * @version 0.2.7 - 2025-09-26
  */
 public class DBConstantsCore {
 
@@ -31,7 +32,7 @@ public class DBConstantsCore {
 		public static final int UNCHECKED = 0;
 		public static final int CHECKED = 1;
 
-		public static final String NOT_DELETED = "0";
+		public static final int NOT_DELETED = 0;
 		public static final int DELETED = 1;
 
 		public static final int NOT_EDITABLE = 0;
@@ -69,9 +70,17 @@ public class DBConstantsCore {
 			return isChecked ? _CHECKED : _UNCHECKED;
 		}
 
+		private static final String DELETE_FLAG_NAME = ToolkitConfigManager.getConfig().getDeleteFlagName();
+
 		public static <Entity extends DomainEntity> Entity deletedEntity(Class<Entity> entityClass) {
 			Entity entity = ReflectiveUtils.createInstance(entityClass);
-			ReflectiveUtils.setField(entity, "deleteFlg", _DELETED);
+			ReflectiveUtils.setField(entity, DELETE_FLAG_NAME, DELETED);
+			return entity;
+		}
+
+		public static <Entity extends DomainEntity> Entity _deletedEntity(Class<Entity> entityClass) {
+			Entity entity = ReflectiveUtils.createInstance(entityClass);
+			ReflectiveUtils.setField(entity, DELETE_FLAG_NAME, _DELETED);
 			return entity;
 		}
 

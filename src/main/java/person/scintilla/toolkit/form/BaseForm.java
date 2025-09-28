@@ -7,6 +7,8 @@ import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -27,9 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.dbflute.dbmeta.AbstractEntity;
+import org.dbflute.outsidesql.typed.TypedSelectPmb;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.NonNull;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +42,7 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 import person.scintilla.toolkit.annotation.DiffField;
 import person.scintilla.toolkit.annotation.NonSessionField;
+import person.scintilla.toolkit.annotation.PMBCondition;
 import person.scintilla.toolkit.annotation.PrimaryKeyField;
 import person.scintilla.toolkit.annotation.Referer;
 import person.scintilla.toolkit.annotation.ResultListField;
@@ -49,7 +55,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.18 2025-09-26
+ * @version 0.1.19 2025-09-26
  */
 public class BaseForm implements Serializable {
 
@@ -124,7 +130,7 @@ public class BaseForm implements Serializable {
 		return _session != null ? _session : (_session = fetchRequest().getSession(true));
 	}
 
-	protected <Type> Type getDataEntity(Class<Type> entityClass) {
+	protected <DataType> DataType getDataEntity(Class<DataType> entityClass) {
 		return createDomainEntity(this, entityClass);
 	}
 
@@ -274,38 +280,79 @@ public class BaseForm implements Serializable {
 
 	/**
 	 * Use @{@link PMBCondition} to annotate the fiels to be set as a query condition when creating a PMB condition.
-	 * @param request Target class of the specified PMB entity.
+	 * @param pmbClass Target class of the specified PMB entity.
 	 */
-	/*
-	protected void wrapNull(TypedSelectPmb<?, ?> pmb) {
-		try {
-			Class<?> pmbClass = pmb.getClass().getSuperclass();
-			for (Field field : pmbClass.getDeclaredFields()) {
-				if (field.getType().equals(String.class)) {
-					String fieldName = field.getName();
-					String value = StringUtils.wrapNull(ReflectiveUtils.getField(pmb, fieldName));
-					if (value == null) {
-						try {
-							pmbClass.getDeclaredField(field.getName() + "InternalLikeSearchOption");
-							LikeSearchOption likeOption = ReflectiveUtils.getField(pmb, fieldName + "InternalLikeSearchOption", LikeSearchOption.class);
-							for (String type : LIKE_OPTION_LIST) {
-								if ((boolean) ReflectiveUtils.fetchMethod(LikeSearchOption.class, "isLike" + type).invoke(likeOption)) {
-									ReflectiveUtils.fetchMethod(pmbClass,
-											"set" + StringUtils.upperCamelCase(field.getName().substring(1)) + "_" + type + "Search", String.class).invoke(pmb, value);
-									break;
-								}
-							}
-						} catch (NoSuchFieldException ignored) {
-							ReflectiveUtils.setField(pmb, fieldName, value);
-						}
+	public <Behavior, Entity> TypedSelectPmb<Behavior, Entity> generatePMB(Class<? extends TypedSelectPmb<Behavior, Entity>> pmbClass) {
+		TypedSelectPmb<Behavior, Entity> pmb = ReflectiveUtils.createInstance(pmbClass);
+		List<String> pmbFieldNameList = Arrays.stream(pmbClass.getSuperclass().getDeclaredFields()).map(Field::getName)
+				.filter(fieldName -> fieldName.startsWith("_")).collect(Collectors.toList());
+		fetchAnnotatedFieldStream(PMBCondition.class).forEach(formField -> {
+			String fieldName = StringUtils.ifEmptyThen(AnnotationUtils.findAnnotation(formField, PMBCondition.class).fieldName(), formField.getName());
+			String pmbFieldName = "_" + fieldName;
+			Object fieldValue = ReflectiveUtils.getField(this, formField, Object.class);
+			if (!pmbFieldNameList.contains(pmbFieldName)) {
+				return;
+			}
+			Field pmbField = ReflectiveUtils.fetchField(pmbClass, pmbFieldName);
+			Class<?> pmbFieldType = pmbField.getType(), formFieldType = formField.getType();
+			if (ReflectiveUtils.matchClass(pmbFieldType, String.class)) {
+				String value = StringUtils.wrapNull(fieldValue);
+				if (!pmbFieldNameList.contains(pmbFieldName + "InternalLikeSearchOption")) {
+					ReflectiveUtils.setField(pmb, pmbFieldName, value);
+				} else {
+					try {
+						Arrays.stream(Introspector.getBeanInfo(pmbClass).getPropertyDescriptors()).map(PropertyDescriptor::getWriteMethod)
+								.filter(method -> method != null && method.getName().matches("^set" + Pattern.quote(StringUtils.upperCamelCase(fieldName)) + "_.+Search$"))
+								.forEach(method -> {
+									try {
+										method.invoke(pmb, value);
+									} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
+										exception.printStackTrace();
+									}
+								});
+					} catch (IntrospectionException exception) {
+						exception.printStackTrace();
 					}
 				}
+			} else if (ReflectiveUtils.matchClass(pmbFieldType, Integer.class)) {
+				ReflectiveUtils.setField(pmb, fieldName, DecimalUtils.toInteger(fieldValue));
+			} else if (ReflectiveUtils.matchClass(pmbFieldType, LocalDateTime.class)) {
+				ReflectiveUtils.setField(pmb, fieldName, DateTimeUtils.parse(fieldValue));
+			} else if (ReflectiveUtils.matchClass(pmbFieldType, LocalDate.class)) {
+				ReflectiveUtils.setField(pmb, fieldName, DateTimeUtils.parseDate(fieldValue));
+			} else if (ReflectiveUtils.matchClass(pmbFieldType, LocalTime.class)) {
+				ReflectiveUtils.setField(pmb, fieldName, DateTimeUtils.parseTime(fieldValue));
+			} else if (ReflectiveUtils.matchClass(pmbFieldType, List.class)) {
+				Type pmbParamType = ((ParameterizedType) pmbField.getGenericType()).getActualTypeArguments()[0];
+				if (ReflectiveUtils.matchClass(formFieldType, List.class)) {
+					if (CollectionUtils.isEmpty((List<?>) fieldValue)) {
+						ReflectiveUtils.setField(pmb, fieldName, null);
+					} else {
+						Type formParamType = ((ParameterizedType) formField.getGenericType()).getActualTypeArguments()[0];
+						if (pmbParamType.equals(formParamType)) {
+							ReflectiveUtils.setField(pmb, fieldName, fieldValue);
+						} else if (((Class<?>) pmbParamType).equals(Integer.class)) {
+							List<Integer> valueList = ((List<?>) fieldValue).stream().map(DecimalUtils::toInteger).collect(Collectors.toList());
+							ReflectiveUtils.setField(pmb, fieldName, valueList);
+						} else if (((Class<?>) pmbParamType).equals(String.class)) {
+							List<String> valueList = ((List<?>) fieldValue).stream().map(StringUtils::wrapNull).collect(Collectors.toList());
+							ReflectiveUtils.setField(pmb, fieldName, valueList);
+						}
+					}
+				} else if ((((Class<?>) pmbParamType).equals(Integer.class) && DecimalUtils.parseDecimal(fieldValue) == null) ||
+						(((Class<?>) pmbParamType).equals(String.class) && StringUtils.isEmpty(StringUtils.wrapBlank(fieldValue)))) {
+					ReflectiveUtils.setField(pmb, fieldName, null);
+				} else if (((Class<?>) pmbParamType).equals(Integer.class)) {
+					List<Integer> valueList = Collections.singletonList(DecimalUtils.toInteger(fieldValue));
+					ReflectiveUtils.setField(pmb, fieldName, valueList);
+				} else if (((Class<?>) pmbParamType).equals(String.class)) {
+					List<String> valueList = Collections.singletonList(StringUtils.wrapNull(fieldValue));
+					ReflectiveUtils.setField(pmb, fieldName, valueList);
+				}
 			}
-		} catch (ReflectiveOperationException exception) {
-			throw new RuntimeException(exception);
-		}
+		});
+		return pmb;
 	}
-	*/
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -456,7 +503,6 @@ public class BaseForm implements Serializable {
 	private static final Map<Class<? extends Annotation>, Map<Class<? extends BaseForm>, Field>> UNIQUE_ANNOTATED_FIELD_MAP = new HashMap<>();
 	private static final List<String> SET_DEFAULT_FIELD_INITIATOR_CLASS_NAMES = Collections.unmodifiableList(Arrays.asList("Controller", "Service", "Form"));
 	private static final List<Class<?>> TOP_SUPER_CLASSES = Collections.unmodifiableList(Arrays.asList(Object.class, BaseForm.class));
-	private static final List<String> LIKE_OPTION_LIST = Collections.unmodifiableList(Arrays.asList("Prefix", "Suffix", "Contain"));
 	private static final String DEFAULT_REFERER = Referer.DEFAULT_REFERER;
 	private static final int DEFAULT_INIT_OP_INDEX = -1;
 	private static final long serialVersionUID = 1L;
@@ -479,7 +525,7 @@ public class BaseForm implements Serializable {
 				ReflectiveUtils.matchType(object, LocalDateTime.class);
 	}
 
-	private static <Type> boolean areBasicEqual(@NonNull Type object1, @NonNull Type object2) {
+	private static <DataType> boolean areBasicEqual(@NonNull DataType object1, @NonNull DataType object2) {
 		if (ReflectiveUtils.matchType(object1, BigDecimal.class)) {
 			return ((BigDecimal) object1).compareTo((BigDecimal) object2) == 0;
 		} else if (ReflectiveUtils.matchType(object1, LocalDateTime.class)) {

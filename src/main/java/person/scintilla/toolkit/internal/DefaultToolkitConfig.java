@@ -3,23 +3,28 @@ package person.scintilla.toolkit.internal;
 public class DefaultToolkitConfig implements ToolkitConfig {
 
 	@Override
+	public String getDeleteFlagName() {
+		return "deleteFlag";
+	}
+
+	@Override
 	public String getDefaultDateFormat() {
 		return "yyyy/MM/dd";
 	}
 
 	@Override
 	public String getPageSizePropName() {
-		return "springboot.pj.paging.page-size";
+		return "springboot.paging.page-size";
 	}
 
 	@Override
 	public String getDisplayPageCountPropName() {
-		return "springboot.pj.paging.display-page-count";
+		return "springboot.paging.display-page-count";
 	}
 
 	@Override
 	public String getListEmptyErrorCode() {
-		return "{E000A001}";
+		return "E000A001";
 	}
 
 	@Override

@@ -37,7 +37,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.1 - 2025-09-26
+ * @version 1.0.2 - 2025-09-28
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
@@ -67,7 +67,7 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 	public boolean isValid(List<?> list, ConstraintValidatorContext context) {
 		if (CollectionUtils.isEmpty(list)) {
 			if (this.annotation.require()) {
-				String messageCode = AnnotationValueResolver.resolve(this.annotation.message()).replaceAll("^[{]", "").replaceAll("[}]$", "");
+				String messageCode = AnnotationValueResolver.resolve(this.annotation.message());
 				String message = new FieldValidator(null).getMessage(messageCode, Collections.singletonMap("name", this.annotation.name()));
 				addViolation(context, message);
 			}

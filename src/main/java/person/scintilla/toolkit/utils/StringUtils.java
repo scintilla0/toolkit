@@ -31,8 +31,9 @@ public class StringUtils {
 		return source == null ? BLANK : source.toString();
 	}
 
-	public static String wrapNull(String source) {
-		return isEmpty(source) ? null : source;
+	public static String wrapNull(Object source) {
+		String result = wrapBlank(source);
+		return isEmpty(result) ? null : result;
 	}
 
 	public static String ifEmptyThen(String source1, String source2) {
