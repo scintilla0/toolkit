@@ -1,3 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-person.scintilla.toolkit.internal.ToolkitConfigManager,\
 person.scintilla.toolkit.internal.ToolkitBeanAutoConfiguration
