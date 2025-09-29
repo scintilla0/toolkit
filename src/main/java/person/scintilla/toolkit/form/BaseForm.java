@@ -59,7 +59,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.21 2025-09-28
+ * @version 0.1.22 2025-09-29
  */
 public class BaseForm implements Serializable {
 
@@ -480,7 +480,7 @@ public class BaseForm implements Serializable {
 					}
 					if (descriptor != null) {
 						if (ReflectiveUtils.matchClass(descriptor.getPropertyType(), String.class)) {
-							// no processing
+							value = StringUtils.wrapNull(value);
 						} else if (ReflectiveUtils.matchClass(descriptor.getPropertyType(), Integer.class)) {
 							value = DecimalUtils.toInteger(value);
 						} else if (ReflectiveUtils.matchClass(descriptor.getPropertyType(), Long.class)) {
