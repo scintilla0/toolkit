@@ -23,14 +23,14 @@ public @interface FieldRule {
 		 * @param format - String
 		 * @param isRequired - boolean
 		 */
-		CHECK_DATE("checkeDate"),
+		CHECK_DATE("checkDate"),
 		/**
 		 * @param isRequired - boolean
 		 * @param maxIntegralLength - int
 		 * @param maxFractionalLength - int
 		 * @param allowMinus - boolean
 		 */
-		CHECK_DECIMAL("checkeDecimal"),
+		CHECK_DECIMAL("checkDecimal"),
 		/**
 		 * @param minLength - int
 		 * @param maxLength - int

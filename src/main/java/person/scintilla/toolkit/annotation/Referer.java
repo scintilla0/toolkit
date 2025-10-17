@@ -7,8 +7,6 @@ import java.lang.annotation.Target;
 
 import org.springframework.core.annotation.AliasFor;
 
-import person.scintilla.toolkit.form.BaseForm;
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Referer {

@@ -37,7 +37,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.3 - 2025-09-28
+ * @version 1.0.4 - 2025-10-17
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
@@ -54,7 +54,7 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 		constraintArgumentType.put(ConstraintType.CHECK_ALPHA_NUM_PUNC, new Class<?>[] {int.class, int.class});
 		constraintArgumentType.put(ConstraintType.CHECK_LENGTH, new Class<?>[] {int.class, int.class});
 		constraintArgumentType.put(ConstraintType.CHECK_EMPTY, new Class<?>[] {});
-		constraintArgumentType.put(ConstraintType.CHECK_REPEAT, new Class<?>[] {});
+		constraintArgumentType.put(ConstraintType.CHECK_REPEAT, new Class<?>[] {Object.class, Set.class});
 		CONSTRAINT_ARGUMENT_TYPE = Collections.unmodifiableMap(constraintArgumentType);
 	}
 

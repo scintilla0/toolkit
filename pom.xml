@@ -5,7 +5,7 @@
 
 	<groupId>person.scintilla</groupId>
 	<artifactId>toolkit</artifactId>
-	<version>0.1.10</version>
+	<version>0.1.11</version>
 	<packaging>jar</packaging>
 
 	<name>toolkit</name>
@@ -99,15 +99,20 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.2</version>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.6.0</version>
 				<configuration>
-					<archive>
-						<manifest>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-						</manifest>
-					</archive>
+					<doclint>none</doclint>
 				</configuration>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
