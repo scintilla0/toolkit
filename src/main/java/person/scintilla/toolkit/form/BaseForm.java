@@ -31,6 +31,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.dbflute.dbmeta.AbstractEntity;
+import org.dbflute.dbmeta.DBMeta;
+import org.dbflute.dbmeta.info.ColumnInfo;
 import org.dbflute.outsidesql.typed.TypedSelectPmb;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -59,7 +61,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.22 2025-09-29
+ * @version 0.1.24 2025-10-23
  */
 public class BaseForm implements Serializable {
 
@@ -134,8 +136,8 @@ public class BaseForm implements Serializable {
 		return _session != null ? _session : (_session = fetchRequest().getSession(true));
 	}
 
-	protected <DataType> DataType getDataEntity(Class<DataType> entityClass) {
-		return createDomainEntity(this, entityClass);
+	protected <DataType> DataType getDataEntity(Class<DataType> entityClass, String... excludingFields) {
+		return createDomainEntity(this, entityClass, excludingFields);
 	}
 
 	protected void setDataEntity(Object entity) {
@@ -286,9 +288,9 @@ public class BaseForm implements Serializable {
 	 * Use @{@link PMBCondition} to annotate the fiels to be set as a query condition when creating a PMB condition.
 	 * @param pmbClass Target class of the specified PMB entity.
 	 */
-	public <Behavior, Entity> TypedSelectPmb<Behavior, Entity> generatePMB(Class<? extends TypedSelectPmb<Behavior, Entity>> pmbClass) {
+	public <Behavior, Entity, PMBType extends TypedSelectPmb<Behavior, Entity>> PMBType generatePMB(Class<PMBType> pmbClass) {
 		Objects.requireNonNull(pmbClass);
-		TypedSelectPmb<Behavior, Entity> pmb = ReflectiveUtils.createInstance(pmbClass);
+		PMBType pmb = ReflectiveUtils.createInstance(pmbClass);
 		List<String> pmbFieldNameList = Arrays.stream(pmbClass.getSuperclass().getDeclaredFields()).map(Field::getName)
 				.filter(fieldName -> fieldName.startsWith("_")).collect(Collectors.toList());
 		fetchAnnotatedFieldStream(PMBCondition.class).forEach(formField -> {
@@ -373,8 +375,8 @@ public class BaseForm implements Serializable {
 	 * Create a specified domain entity and copy all field values.
 	 * @param targetClass Target class of the specified domain entity.
 	 */
-	public <TargetType> TargetType createDomainEntity(Class<TargetType> targetClass) {
-		return createDomainEntity(this, targetClass);
+	public <TargetType> TargetType createDomainEntity(Class<TargetType> targetClass, String... excludingFields) {
+		return createDomainEntity(this, targetClass, excludingFields);
 	}
 
 	/**
@@ -464,15 +466,22 @@ public class BaseForm implements Serializable {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public static <TargetType> TargetType createDomainEntity(Object dataEntity, Class<TargetType> targetClass) {
+	public static <TargetType> TargetType createDomainEntity(Object dataEntity, Class<TargetType> targetClass, String... excludingFields) {
 		Objects.requireNonNull(dataEntity);
 		Objects.requireNonNull(targetClass);
 		TargetType entity = ReflectiveUtils.createInstance(targetClass);
-		Class<?> superTargetClass = ReflectiveUtils.matchClass(targetClass, AbstractEntity.class) ? targetClass.getSuperclass() : targetClass;
+		boolean isDBFluteEntity = ReflectiveUtils.matchClass(targetClass, AbstractEntity.class);
+		Class<?> superTargetClass = isDBFluteEntity ? targetClass.getSuperclass() : targetClass;
+		DBMeta dbMeta = isDBFluteEntity ? ((DBMeta) ReflectiveUtils.invokeMethod(entity, "asDBMeta")) : null;
+		List<String> pkFieldList = fetchPkFields(dbMeta, targetClass);
+		List<String> commonFieldList = fetchCommonFields(dbMeta);
 		for (Field field : (dataEntity instanceof AbstractEntity ? dataEntity.getClass().getSuperclass() : dataEntity.getClass()).getDeclaredFields()) {
 			String fieldName = dataEntity instanceof AbstractEntity && field.getName().startsWith("_") ? field.getName().substring(1) : field.getName();
+			if ((commonFieldList != null && commonFieldList.contains(fieldName)) || Arrays.asList(excludingFields).contains(fieldName)) {
+				continue;
+			}
 			Object value = ReflectiveUtils.getField(dataEntity, field.getName(), Object.class);
-			if (isBasicType(value)) {
+			if (isBasicType(field)) {
 				try {
 					PropertyDescriptor descriptor = fetchPropertyDescriptor(superTargetClass, fieldName);
 					if (descriptor == null) {
@@ -496,11 +505,12 @@ public class BaseForm implements Serializable {
 						} else if (ReflectiveUtils.matchClass(descriptor.getPropertyType(), LocalDateTime.class)) {
 							value = DateTimeUtils.parse(value);
 						} else {
-							value = null;
+							continue;
 						}
-						if (value != null) {
-							descriptor.getWriteMethod().invoke(entity, value);
+						if (pkFieldList != null && pkFieldList.contains(fieldName) && value == null) {
+							continue;
 						}
+						descriptor.getWriteMethod().invoke(entity, value);
 					}
 				} catch (IntrospectionException | NullPointerException | IllegalAccessException | InvocationTargetException ignored) {
 					continue;
@@ -517,11 +527,13 @@ public class BaseForm implements Serializable {
 	private final String INIT_OP_INDEX_SESSION_KEY = "_init_op_index_" + this.getClass().getName();
 
 	private static final Map<Class<? extends Annotation>, Map<Class<? extends BaseForm>, Field>> UNIQUE_ANNOTATED_FIELD_MAP = new HashMap<>();
+	private static final Map<Class<? extends AbstractEntity>, List<String>> PK_FIELDS_MAP = new HashMap<>();
 	private static final List<String> SET_DEFAULT_FIELD_INITIATOR_CLASS_NAMES = Collections.unmodifiableList(Arrays.asList("Controller", "Service", "Form"));
 	private static final List<Class<?>> TOP_SUPER_CLASSES = Collections.unmodifiableList(Arrays.asList(Object.class, BaseForm.class));
 	private static final String DEFAULT_REFERER = Referer.DEFAULT_REFERER;
 	private static final int DEFAULT_INIT_OP_INDEX = -1;
 	private static final long serialVersionUID = 1L;
+	private static List<String> COMMON_FIELDS;
 
 	private static PropertyDescriptor fetchPropertyDescriptor(Class<?> objectClass, String fieldName) throws IntrospectionException {
 		return Arrays.stream(Introspector.getBeanInfo(objectClass).getPropertyDescriptors())
@@ -531,6 +543,15 @@ public class BaseForm implements Serializable {
 	private static PropertyDescriptor fetchPropertyDescriptorIgnoreCase(Class<?> objectClass, String fieldName) throws IntrospectionException {
 		return Arrays.stream(Introspector.getBeanInfo(objectClass).getPropertyDescriptors())
 				.filter(property -> property.getName().equalsIgnoreCase(fieldName)).findAny().orElse(null);
+	}
+
+	private static boolean isBasicType(Field field) {
+		Class<?> fieldType = field.getType();
+		return ReflectiveUtils.matchClass(fieldType, Integer.class) || ReflectiveUtils.matchClass(fieldType, Long.class) ||
+				ReflectiveUtils.matchClass(fieldType, Double.class) || ReflectiveUtils.matchClass(fieldType, Boolean.class) ||
+				ReflectiveUtils.matchClass(fieldType, String.class) || ReflectiveUtils.matchClass(fieldType, BigDecimal.class) ||
+				ReflectiveUtils.matchClass(fieldType, LocalDate.class) || ReflectiveUtils.matchClass(fieldType, LocalTime.class) ||
+				ReflectiveUtils.matchClass(fieldType, LocalDateTime.class);
 	}
 
 	private static boolean isBasicType(Object object) {
@@ -740,6 +761,25 @@ public class BaseForm implements Serializable {
 				}
 			}
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> fetchPkFields(DBMeta dbMeta, Class<?> targetClass) {
+		return dbMeta == null ? null : PK_FIELDS_MAP.computeIfAbsent((Class<AbstractEntity>) targetClass, key -> dbMeta.hasPrimaryKey() ? dbMeta.getPrimaryInfo()
+				.getPrimaryColumnList().stream().map(ColumnInfo::getPropertyName).collect(Collectors.toList()) : Collections.emptyList());
+	}
+
+	private static List<String> fetchCommonFields(DBMeta dbMeta) {
+		if (dbMeta == null) {
+			return null;
+		}
+		if (COMMON_FIELDS == null) {
+			List<String> commonFieldList = dbMeta.getCommonColumnInfoList()
+					.stream().map(columnInfo -> columnInfo.getPropertyName()).collect(Collectors.toList());
+			commonFieldList.addAll(Arrays.asList("deleteFlag", "delete_flag", "deleteFlg", "delete_flg", "delFlg", "del_flg"));
+			COMMON_FIELDS = Collections.unmodifiableList(commonFieldList);
+		}
+		return COMMON_FIELDS;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////

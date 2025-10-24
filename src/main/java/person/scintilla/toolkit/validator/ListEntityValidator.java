@@ -12,6 +12,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -37,13 +39,16 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.4 - 2025-10-17
+ * @version 1.0.6 - 2025-10-24
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
 	private RequireListEntity annotation;
 	private static final Map<String, Method> CONSTRAINT_METHOD_CACHE = new ConcurrentHashMap<>();
 	private static final Map<ConstraintType, Class<?>[]> CONSTRAINT_ARGUMENT_TYPE;
+	private static final Pattern FIELD_NAME_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
+	private static final List<String> EMPTY_DETECTOR_METHOD_NAME_PRESET =
+			Collections.unmodifiableList(Arrays.asList("hasContent", "isValid", "isValidData", "isValidEntity", "isNotEmpty"));
 	static {
 		Map<ConstraintType, Class<?>[]> constraintArgumentType = new HashMap<>();
 		constraintArgumentType.put(ConstraintType.CHECK_TIME, new Class<?>[] {String.class, boolean.class});
@@ -65,19 +70,26 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 
 	@Override
 	public boolean isValid(List<?> list, ConstraintValidatorContext context) {
+		boolean valid = true;
 		if (CollectionUtils.isEmpty(list)) {
 			if (this.annotation.require()) {
 				String messageCode = AnnotationValueResolver.resolve(this.annotation.message());
 				String message = new FieldValidator(null).getMessage(messageCode, Collections.singletonMap("name", this.annotation.name()));
 				addViolation(context, message);
+				valid = false;
 			}
-			return false;
+			return valid;
 		}
-		boolean valid = true;
+		Object bean = this.annotation.emptyDetector().equals(RequireListEntity.class) ? null : SpringContextUtils.getBean(this.annotation.emptyDetector());
+		Method emptyDetectorMethod = fetchEmptyDetectorMethod(bean, list.get(0));
 		Map<String, Set<Object>> repeatSetContainer = new HashMap<>();
 		for (int index = 0; index < list.size(); index ++) {
 			Object object = list.get(index);
+			if (bean != null && !hasContent(bean, object, emptyDetectorMethod)) {
+				continue;
+			}
 			FieldValidator fieldInfo = new FieldValidator(null, null, index);
+			replaceIfHasPrefix(fieldInfo, object);
 			for (FieldRule rule : this.annotation.constraints()) {
 				String fieldValue = ReflectiveUtils.getField(object, rule.field());
 				fieldInfo.pack(rule.field(), rule.name(), fieldValue);
@@ -106,6 +118,43 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 			}
 		}
 		return valid;
+	}
+
+	private Method fetchEmptyDetectorMethod(Object bean, Object dataValue) {
+		for (String methodName : EMPTY_DETECTOR_METHOD_NAME_PRESET) {
+			try {
+				return ReflectiveUtils.fetchMethod(bean.getClass(), methodName, dataValue.getClass());
+			} catch (RuntimeException ignored) {
+				continue;
+			}
+		}
+		return null;
+	}
+
+	private boolean hasContent(Object bean, Object dataValue, Method emptyDetectorMethod) {
+		if (emptyDetectorMethod == null) {
+			return true;
+		}
+		try {
+			return (boolean) emptyDetectorMethod.invoke(bean, dataValue);
+		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
+			exception.printStackTrace();
+			return false;
+		}
+	}
+
+	private void replaceIfHasPrefix(FieldValidator fieldInfo, Object object) {
+		if (!StringUtils.isEmpty(this.annotation.prefix())) {
+			StringBuffer prefix = new StringBuffer();
+			Matcher matcher = FIELD_NAME_PATTERN.matcher(this.annotation.prefix());
+			while (matcher.find()) {
+				String fieldName = matcher.group(1).trim();
+				String replacement = ReflectiveUtils.getField(object, fieldName);
+				matcher.appendReplacement(prefix, Matcher.quoteReplacement(replacement));
+			}
+			matcher.appendTail(prefix);
+			fieldInfo.replacePrefix(prefix.toString());
+		}
 	}
 
 	private String buildCacheKey(FieldRule rule) {
@@ -244,6 +293,11 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 
 		private FieldValidator usePrefix(boolean usePrefix) {
 			this.usePrefix = usePrefix;
+			return this;
+		}
+
+		public FieldValidator replacePrefix(String prefix) {
+			this.displayNamePrefix = prefix;
 			return this;
 		}
 

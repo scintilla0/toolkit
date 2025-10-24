@@ -24,6 +24,10 @@ public @interface RequireListEntity {
 
 	String name();
 
+	String prefix() default "";
+
+	Class<?> emptyDetector() default RequireListEntity.class;
+
 	boolean require() default true;
 
 	FieldRule[] constraints();
