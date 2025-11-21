@@ -61,7 +61,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires ReflectiveUtils, DecimalUtils, DateTimeUtils.
- * @version 0.1.24 2025-10-23
+ * @version 0.1.25 2025-10-31
  */
 public class BaseForm implements Serializable {
 
@@ -195,7 +195,7 @@ public class BaseForm implements Serializable {
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	private Object fetchUniqueAnnotatedFieldValue(Class<? extends Annotation> annotationClass) {
+	Object fetchUniqueAnnotatedFieldValue(Class<? extends Annotation> annotationClass) {
 		Class<? extends BaseForm> formClass = this.getClass();
 		Map<Class<? extends BaseForm>, Field> fieldMap = UNIQUE_ANNOTATED_FIELD_MAP.computeIfAbsent(annotationClass, key -> new HashMap<>());
 		Field formField = fieldMap.computeIfAbsent(formClass, key ->

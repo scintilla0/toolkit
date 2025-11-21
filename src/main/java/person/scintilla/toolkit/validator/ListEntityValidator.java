@@ -12,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +40,7 @@ import person.scintilla.toolkit.utils.StringUtils;
 
 /**
  * Requires DecimalUtils, DateTimeUtils, ReflectiveUtils.
- * @version 1.0.6 - 2025-10-24
+ * @version 1.0.9 - 2025-11-06
  */
 public class ListEntityValidator implements ConstraintValidator<RequireListEntity, List<?>> {
 
@@ -149,7 +150,16 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 			Matcher matcher = FIELD_NAME_PATTERN.matcher(this.annotation.prefix());
 			while (matcher.find()) {
 				String fieldName = matcher.group(1).trim();
-				String replacement = ReflectiveUtils.getField(object, fieldName);
+				String replacement;
+				if ("listTitle".equals(fieldName)) {
+					replacement = this.annotation.name();
+				} else if ("index".equals(fieldName)) {
+					replacement = StringUtils.wrapBlank(Integer.parseInt(fieldInfo.getLineNumber()) - 1);
+				} else if ("count".equals(fieldName)) {
+					replacement = fieldInfo.getLineNumber();
+				} else {
+					replacement = StringUtils.wrapBlank(ReflectiveUtils.getField(object, fieldName, Object.class));
+				}
 				matcher.appendReplacement(prefix, Matcher.quoteReplacement(replacement));
 			}
 			matcher.appendTail(prefix);
@@ -214,6 +224,7 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 
 	public static class FieldValidator {
 
+		private static final String PREFIX = ToolkitConfigManager.getConfig().getPrefixErrorCode();
 		private static final String REPEAT = ToolkitConfigManager.getConfig().getRepeatErrorCode();
 		private static final String EMPTY = ToolkitConfigManager.getConfig().getEmptyErrorCode();
 		private static final String LENGTH = ToolkitConfigManager.getConfig().getLengthErrorCode();
@@ -244,14 +255,22 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 			this(result, null, -1);
 		}
 
-		public FieldValidator(BindingResult result, String resultListName, int index) {
+		public FieldValidator(BindingResult result, String listName, int index) {
 			this.result = result;
 			this.lineNumber = (index + 1) + "";
-			this.fieldNamePrefix = StringUtils.wrapBlank(resultListName) + "[" + index + "].";
-			this.displayNamePrefix = getMessage("E000detailPrefix", this.lineNumber);
+			this.fieldNamePrefix = StringUtils.wrapBlank(listName) + "[" + index + "].";
+			this.displayNamePrefix = getMessage(PREFIX, this.lineNumber);
 			if (index < 0) {
 				this.usePrefix = false;
 				this.usedForList = false;
+			}
+		}
+
+		public static <DataType> void listValidate(List<DataType> dataList, String listName, BindingResult result, BiConsumer<FieldValidator, DataType> validator) {
+			if (!CollectionUtils.isEmpty(dataList)) {
+				for (int index = 0; index < dataList.size(); index ++) {
+					validator.accept(new FieldValidator(result, listName, index), dataList.get(index));
+				}
 			}
 		}
 
@@ -371,6 +390,10 @@ public class ListEntityValidator implements ConstraintValidator<RequireListEntit
 				}
 			}
 			return MessageFormat.format(message, (Object[]) arrayArgs);
+		}
+
+		public boolean hasBlankValue() {
+			return StringUtils.isEmpty(this.fieldValue);
 		}
 
 		public boolean hasFieldErrors() {

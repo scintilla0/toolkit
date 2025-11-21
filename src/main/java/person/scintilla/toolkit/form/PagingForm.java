@@ -15,7 +15,7 @@ import person.scintilla.toolkit.internal.ToolkitConfigManager;
 import person.scintilla.toolkit.utils.DecimalUtils;
 
 /**
- * @version 0.1.4 2025-09-28
+ * @version 0.1.5 2025-10-31
  */
 public class PagingForm extends BaseForm {
 
@@ -28,6 +28,8 @@ public class PagingForm extends BaseForm {
 	private Integer allRecordCount = 0;
 
 	private Integer allPageCount = 0;
+
+	private Integer skippedCount = 0;
 
 	private List<Integer> displayPageList;
 
@@ -45,13 +47,14 @@ public class PagingForm extends BaseForm {
 		this.setAllRecordCount(0);
 	}
 
-	public void pushPagingInfoFixPosition(PagingResultBean<? extends AbstractEntity> pagedResultList) {
-		Objects.requireNonNull(pagedResultList);
-		this.setAllRecordCount(pagedResultList.getAllRecordCount());
-		this.setAllPageCount(pagedResultList.getAllPageCount());
+	public void pushPagingInfoFixPosition(PagingResultBean<? extends AbstractEntity> pagingResultList) {
+		Objects.requireNonNull(pagingResultList);
+		this.setAllRecordCount(pagingResultList.getAllRecordCount());
+		this.setAllPageCount(pagingResultList.getAllPageCount());
 		if (this.getAllRecordCount() == 0) {
 			return;
 		}
+		this.setSkippedCount(pagingResultList.getCurrentStartRecordNumber() - 1);
 		BigDecimal pageNumber = new BigDecimal(this.getPageNumber());
 		BigDecimal halfSize = new BigDecimal(this.getDisplayPageCount()).subtract(BigDecimal.ONE).divide(new BigDecimal(2));
 		int beginPage = Math.max(pageNumber.subtract(halfSize).setScale(0, RoundingMode.CEILING).intValue(), 1);
@@ -60,8 +63,8 @@ public class PagingForm extends BaseForm {
 		this.setDisplayPageList(pageList);
 	}
 
-	public void pushPagingInfoFixCount(PagingResultBean<? extends AbstractEntity> pagedResultList) {
-		pushPagingInfoFixPosition(pagedResultList);
+	public void pushPagingInfoFixCount(PagingResultBean<? extends AbstractEntity> pagingResultList) {
+		pushPagingInfoFixPosition(pagingResultList);
 		if (!CollectionUtils.isEmpty(this.getDisplayPageList()) && !isFulfilled()) {
 			if (haveFirstPage() && haveLastPage()) {
 				return;
@@ -123,6 +126,12 @@ public class PagingForm extends BaseForm {
 	}
 	public void setAllPageCount(Integer allPageCount) {
 		this.allPageCount = allPageCount;
+	}
+	public Integer getSkippedCount() {
+		return skippedCount;
+	}
+	public void setSkippedCount(Integer skippedCount) {
+		this.skippedCount = skippedCount;
 	}
 
 	public List<Integer> getDisplayPageList() {

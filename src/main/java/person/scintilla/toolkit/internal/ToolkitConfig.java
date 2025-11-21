@@ -12,6 +12,8 @@ public interface ToolkitConfig {
 
 	String getListEmptyErrorCode();
 
+	String getPrefixErrorCode();
+
 	String getRepeatErrorCode();
 
 	String getEmptyErrorCode();

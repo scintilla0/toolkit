@@ -4,8 +4,8 @@ import java.util.Locale;
 
 public class StringUtils {
 
-	private static final String BLANK = "";
-	private static final String SPACE_CHARS = "\\s\\u3000";
+	public static final String BLANK = "";
+	public static final String SPACE_CHARS = "\\s\\u3000";
 
 	public static String trimSpace(String source) {
 		if (source == null || source.isEmpty()) {

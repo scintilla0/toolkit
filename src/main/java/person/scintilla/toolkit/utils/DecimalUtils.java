@@ -2,13 +2,8 @@ package person.scintilla.toolkit.utils;
 
 import static java.math.RoundingMode.*;
 
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -79,7 +74,7 @@ public class DecimalUtils {
 			result = new BigDecimal(sourceDoubleStr);
 		} else if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (StringUtils.isEmpty(sourceString)) {
 				return null;
 			}
 			try {
@@ -1246,7 +1241,7 @@ public class DecimalUtils {
 	 * @return Wrapped and formatted <b>String</b> char sequence.
 	 */
 	public static String format(Object sourceObject, String formatPattern) {
-		if (EmbeddedStringUtils.isEmpty(formatPattern)) {
+		if (StringUtils.isEmpty(formatPattern)) {
 			return null;
 		}
 		return format(sourceObject, new DecimalFormat(formatPattern));
@@ -1532,7 +1527,7 @@ public class DecimalUtils {
 	 * @return <b>int</b> column number value.
 	 */
 	public static int columnNameToNo(String source) {
-		if (EmbeddedStringUtils.isEmpty(source)) {
+		if (StringUtils.isEmpty(source)) {
 			return 0;
 		}
 		int result = 0;
@@ -1701,7 +1696,7 @@ public class DecimalUtils {
 		}
 		@SuppressWarnings("unchecked")
 		Class<Type> typeClass = (Class<Type>) objectCollection.iterator().next().getClass();
-		Type sumObject = EmbeddedReflectiveUtils.createInstance(typeClass);
+		Type sumObject = ReflectiveUtils.createInstance(typeClass);
 		List<Field> fieldList = new ArrayList<>();
 		Class<?> superTypeClass = typeClass;
 		Set<Class<?>> supportedClassSet = WRAPPER_VALUE_GETTER_MAP.keySet();
@@ -1726,14 +1721,14 @@ public class DecimalUtils {
 		for (Type data : objectCollection) {
 			for (Field field : fieldList) {
 				DecimalWrapper sum = sumMap.get(field.getName());
-				Object value = EmbeddedReflectiveUtils.getField(data, field.getName(), Object.class);
+				Object value = ReflectiveUtils.getField(data, field.getName(), Object.class);
 				sum.add(value);
 			}
 		}
 		for (Field field : fieldList) {
 			DecimalWrapper sum = sumMap.get(field.getName());
 			Object value = WRAPPER_VALUE_GETTER_MAP.get(field.getType()).apply(sum);
-			EmbeddedReflectiveUtils.setField(sumObject, field.getName(), value);
+			ReflectiveUtils.setField(sumObject, field.getName(), value);
 		}
 		return sumObject;
 	}
@@ -2606,7 +2601,7 @@ public class DecimalUtils {
 		public <ObjectType> void pushComparator(int componentTypeIndex, Class<ObjectType> objectClass, BiPredicate<ObjectType, ObjectType> comparator) {
 			if (componentTypeIndex < 0 || componentTypeIndex >= componentContainer.size()) {
 				throw new IllegalArgumentException("Component type index doesn't exist");
-			} else if (!EmbeddedReflectiveUtils.matchType(componentContainer.get(componentTypeIndex).values().iterator().next(), objectClass)) {
+			} else if (!ReflectiveUtils.matchType(componentContainer.get(componentTypeIndex).values().iterator().next(), objectClass)) {
 				throw new IllegalArgumentException("Comparator class doesn't match component class");
 			}
 			comparatorContainer.set(componentTypeIndex, (BiPredicate<Object, Object>) nullConsideredComparator(comparator));
@@ -2738,7 +2733,7 @@ public class DecimalUtils {
 	private static final char MINUS = '-';
 	private static final char LEFT_PARENTHESIS = '(';
 	private static final char RIGHT_PARENTHESIS = ')';
-	private static final String BLANK = EmbeddedStringUtils.BLANK;
+	private static final String BLANK = StringUtils.BLANK;
 	private static final BigDecimal ZERO = BigDecimal.ZERO;
 	private static final BigDecimal ONE = BigDecimal.ONE;
 	private static final BigDecimal DEFAULT_VALUE = ZERO;
@@ -2802,145 +2797,6 @@ public class DecimalUtils {
 		PRECEDENCE_MAP = Collections.unmodifiableMap(precedenceMap);
 		OPERATOR_EVALUATION_MAP = Collections.unmodifiableMap(operatorEvaluationMap);
 		WRAPPER_VALUE_GETTER_MAP = Collections.unmodifiableMap(wrapperValueGetterMap);
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// embedded utils
-
-	private static class EmbeddedStringUtils {
-		private static final String BLANK = "";
-		private static final String SPACE_CHARS = "\\s\\u3000";
-
-		private static String trimSpace(String source) {
-			if (source == null || source.isEmpty()) {
-				return source;
-			}
-			return source.replaceAll("^[" + SPACE_CHARS + "]+|[" + SPACE_CHARS + "]+$", BLANK);
-		}
-
-		static boolean isEmpty(String source) {
-			return source == null || trimSpace(source).isEmpty();
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static class EmbeddedReflectiveUtils {
-		static <ReturnType> ReturnType getField(Object object, String fieldName, Class<ReturnType> returnClass) {
-			try {
-				return (ReturnType) fetchPropertyDescriptor(object.getClass(), fieldName).getReadMethod().invoke(object);
-			} catch (IntrospectionException | NullPointerException | IllegalAccessException | InvocationTargetException caught) {
-				Field field = fetchField(object.getClass(), fieldName);
-				return getField(object, field, returnClass);
-			}
-		}
-		private static <ReturnType> ReturnType getField(Object object, Field field, Class<ReturnType> returnClass) {
-			if (object == null) {
-				return null;
-			}
-			if (!returnClass.isAssignableFrom(field.getType()) && !returnClass.equals(Object.class)) {
-				throw new IllegalArgumentException("Incorrect return type: " + returnClass.getName());
-			}
-			boolean isAccessible = field.isAccessible();
-			field.setAccessible(true);
-			try {
-				return (ReturnType) field.get(object);
-			} catch (IllegalArgumentException | IllegalAccessException exception) {
-				throw new RuntimeException(exception);
-			} finally {
-				field.setAccessible(isAccessible);
-			}
-		}
-
-		static void setField(Object object, String fieldName, Object value) {
-			try {
-				fetchPropertyDescriptor(object.getClass(), fieldName).getWriteMethod().invoke(object, value);
-			} catch (IllegalArgumentException exception) {
-				throw new IllegalArgumentException("Incorrect value type: " + value.getClass().getName());
-			} catch (IntrospectionException | NullPointerException | IllegalAccessException | InvocationTargetException caught) {
-				Field field = fetchField(object.getClass(), fieldName);
-				setField(object, field, value);
-			}
-		}
-		private static void setField(Object object, Field field, Object value) {
-			if (object == null) {
-				return;
-			}
-			if (value != null && (!field.getType().isAssignableFrom(value.getClass()) && !field.getType().equals(Object.class))) {
-				throw new IllegalArgumentException("Incorrect value type: " + value.getClass().getName());
-			}
-			boolean isAccessible = field.isAccessible();
-			field.setAccessible(true);
-			try {
-				field.set(object, value);
-			} catch (IllegalArgumentException | IllegalAccessException exception) {
-				throw new RuntimeException(exception);
-			} finally {
-				field.setAccessible(isAccessible);
-			}
-		}
-
-		private static PropertyDescriptor fetchPropertyDescriptor(Class<?> objectClass, String fieldName) throws IntrospectionException {
-			return Arrays.stream(Introspector.getBeanInfo(objectClass).getPropertyDescriptors())
-					.filter(property -> property.getName().equals(fieldName)).findAny().orElse(null);
-		}
-
-		private static Field fetchField(Class<?> objectClass, String fieldName) {
-			Field field = null;
-			Class<?> superClass = objectClass;
-			while (field == null && superClass != null && !TOP_SUPER_CLASSES.contains(superClass)) {
-				try {
-					field = superClass.getDeclaredField(fieldName);
-				} catch (NoSuchFieldException | SecurityException ignored) {
-				} finally {
-					superClass = superClass.getSuperclass();
-				}
-			}
-			if (field == null) {
-				throw new RuntimeException(new NoSuchFieldException(fieldName));
-			}
-			return field;
-		}
-
-		static <ObjectType> ObjectType createInstance(Class<ObjectType> objectClass) {
-			try {
-				Constructor<ObjectType> constructor = objectClass.getDeclaredConstructor();
-				boolean isAccessible = constructor.isAccessible();
-				constructor.setAccessible(true);
-				try {
-					return constructor.newInstance();
-				} catch (InstantiationException | IllegalAccessException | InvocationTargetException exception) {
-					throw new RuntimeException(exception);
-				} finally {
-					constructor.setAccessible(isAccessible);
-				}
-			} catch (NoSuchMethodException exception) {
-				throw new RuntimeException(exception);
-			}
-		}
-
-		static boolean matchType(Object object, Class<?> targetClass) {
-			if (targetClass.equals(byte.class) || targetClass.equals(Byte.class)) {
-				return object instanceof Byte;
-			} else if (targetClass.equals(short.class) || targetClass.equals(Short.class)) {
-				return object instanceof Short;
-			} else if (targetClass.equals(int.class) || targetClass.equals(Integer.class)) {
-				return object instanceof Integer;
-			} else if (targetClass.equals(long.class) || targetClass.equals(Long.class)) {
-				return object instanceof Long;
-			} else if (targetClass.equals(float.class) || targetClass.equals(Float.class)) {
-				return object instanceof Float;
-			} else if (targetClass.equals(double.class) || targetClass.equals(Double.class)) {
-				return object instanceof Double;
-			} else if (targetClass.equals(boolean.class) || targetClass.equals(Boolean.class)) {
-				return object instanceof Boolean;
-			} else if (targetClass.equals(char.class) || targetClass.equals(Character.class)) {
-				return object instanceof Character;
-			} else {
-				return targetClass.isInstance(object);
-			}
-		}
-
-		private static final List<Class<?>> TOP_SUPER_CLASSES = Collections.singletonList(Object.class);
 	}
 
 }

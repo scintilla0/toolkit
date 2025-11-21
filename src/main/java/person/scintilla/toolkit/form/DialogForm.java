@@ -23,7 +23,7 @@ import person.scintilla.toolkit.annotation.NonSessionField;
 import person.scintilla.toolkit.utils.StringUtils;
 
 /**
- * @version 0.3.3 - 2025-09-28
+ * @version 0.3.5 - 2025-11-06
  */
 public class DialogForm extends BaseForm {
 
@@ -110,10 +110,14 @@ public class DialogForm extends BaseForm {
 	}
 
 	public void autoSettle() {
-		autoSettle(null);
+		autoSettle(null, false);
 	}
 
 	public void autoSettle(Object data) {
+		autoSettle(data, true);
+	}
+
+	public void autoSettle(Object data, boolean withObject) {
 		this.setData(data);
 		if (!CollectionUtils.isEmpty(this.getInformations())) {
 			this.setInformations(null);
@@ -122,7 +126,11 @@ public class DialogForm extends BaseForm {
 			this.setStatus(1);
 		} else {
 			if (data == null) {
-				this.setStatus(0);
+				if (withObject) {
+					this.setStatus(2);
+				} else {
+					this.setStatus(0);
+				}
 			} else {
 				if ((data instanceof Collection && ((Collection<?>) data).isEmpty())
 						|| (data instanceof Map && ((Map<?, ?>) data).isEmpty())) {
@@ -144,6 +152,10 @@ public class DialogForm extends BaseForm {
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	public static DialogForm successOrEmpty(Object data) {
+		return data != null ? DialogForm.success(data) : DialogForm.empty(null);
+	}
 
 	public static DialogForm success() {
 		return success(null);

@@ -5,7 +5,7 @@
 
 	<groupId>person.scintilla</groupId>
 	<artifactId>toolkit</artifactId>
-	<version>0.1.12</version>
+	<version>0.2.0</version>
 	<packaging>jar</packaging>
 
 	<name>toolkit</name>

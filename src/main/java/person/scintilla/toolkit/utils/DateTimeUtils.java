@@ -31,7 +31,7 @@ import java.util.function.Function;
  * This class provides an assortment of date and time converting and calculation methods,
  * most of which have auto-parsing support using {@link #parseDate(Object)},
  * {@link #parseTime(Object)} and {@link #parse(Object)}.<br>
- * @version 1.1.14 - 2025-05-07
+ * @version 1.1.15-package - 2025-11-21
  * @author scintilla0
  */
 public class DateTimeUtils {
@@ -59,7 +59,7 @@ public class DateTimeUtils {
 			return null;
 		} else if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				for (DateTimeFormatter format : PRESET_DATE_FORMAT.keySet()) {
 					result = parseDate(sourceString, format);
 					if (result != null) {
@@ -123,7 +123,7 @@ public class DateTimeUtils {
 	 * @see #JP_ERA_NAME
 	 */
 	public static LocalDate parseDate_jp(String source) {
-		if (EmbeddedStringUtils.isEmpty(source)) {
+		if (StringUtils.isEmpty(source)) {
 			return null;
 		}
 		if (source.length() <= 2) {
@@ -396,7 +396,7 @@ public class DateTimeUtils {
 		LocalDate result;
 		if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				for (Map.Entry<DateTimeFormatter, String> entry : PRESET_DATE_FORMAT.entrySet()) {
 					result = parseDate(sourceString + entry.getValue(), entry.getKey());
 					if (result != null) {
@@ -519,7 +519,7 @@ public class DateTimeUtils {
 		LocalDate result;
 		if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				result = parseDate(sourceString + YEAR_COMPLEMENT, DATE_FULL_PLAIN);
 				if (result == null) {
 					result = atDateInMonth(sourceObject, 1);
@@ -1061,7 +1061,18 @@ public class DateTimeUtils {
 	public static String formatDate(Object sourceObject, DateTimeFormatter format) {
 		LocalDate result = parseDate(sourceObject);
 		if (result == null) {
-			return null;
+			String pattern = format.toString();
+			boolean hasYear = pattern.contains("YearOfEra");
+			boolean hasMonth = pattern.contains("MonthOfYear");
+			boolean hasDay = pattern.contains("DayOfMonth");
+			if (hasYear && !hasMonth && !hasDay) {
+				result = atFirstDateOfYear(sourceObject);
+			} else if (hasYear && hasMonth && !hasDay) {
+				result = atDateInMonth(sourceObject, 1);
+			}
+			if (result == null) {
+				return null;
+			}
 		}
 		return result.format(format);
 	}
@@ -1140,7 +1151,7 @@ public class DateTimeUtils {
 			return null;
 		} else if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				for (DateTimeFormatter format : PRESET_TIME_FORMAT.keySet()) {
 					result = parseTime(sourceString, format);
 					if (result != null) {
@@ -1242,7 +1253,7 @@ public class DateTimeUtils {
 		LocalTime result;
 		if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				for (Map.Entry<DateTimeFormatter, String> entry : PRESET_TIME_FORMAT.entrySet()) {
 					result = parseTime(sourceString + entry.getValue(), entry.getKey());
 					if (result != null) {
@@ -1273,7 +1284,7 @@ public class DateTimeUtils {
 		LocalTime result;
 		if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				result = parseTime(sourceString + HOUR_COMPLEMENT, TIME_BASIC_PLAIN);
 				if (result == null) {
 					result = atStartOfMinute(sourceObject);
@@ -1859,7 +1870,7 @@ public class DateTimeUtils {
 			return null;
 		} else if (sourceObject instanceof String) {
 			String sourceString = (String) sourceObject;
-			if (!EmbeddedStringUtils.isEmpty(sourceString)) {
+			if (!StringUtils.isEmpty(sourceString)) {
 				for (DateTimeFormatter format : PRESET_DATE_TIME_FORMAT.keySet()) {
 					result = parse(sourceString, format);
 					if (result != null) {
@@ -1922,7 +1933,7 @@ public class DateTimeUtils {
 	}
 
 	private static <Type> Type parse(String source, String formatPattern, BiFunction<String, DateTimeFormatter, Type> parser) {
-		if (EmbeddedStringUtils.isEmpty(formatPattern)) {
+		if (StringUtils.isEmpty(formatPattern)) {
 			return null;
 		}
 		return parser.apply(source, DateTimeFormatter.ofPattern(formatPattern));
@@ -1941,7 +1952,7 @@ public class DateTimeUtils {
 	}
 
 	private static <Type> Type parse(String source, DateTimeFormatter format, BiFunction<String, DateTimeFormatter, Type> parser) {
-		if (EmbeddedStringUtils.isEmpty(source)) {
+		if (StringUtils.isEmpty(source)) {
 			return null;
 		}
 		try {
@@ -2867,7 +2878,7 @@ public class DateTimeUtils {
 	private static final List<Integer> SEQUENCE_INVALID_COMPARE_RESULT_NOT_EQUAL = Collections.unmodifiableList(Arrays.asList(1, 0));
 	private static final List<Integer> SEQUENCE_INVALID_COMPARE_RESULT_NOT_NULL = Collections.unmodifiableList(Arrays.asList(1, 2, -2, 22));
 	private static final List<Integer> SEQUENCE_INVALID_COMPARE_RESULT_NOT_EQUAL_NULL = Collections.unmodifiableList(Arrays.asList(1, 0, 2, -2, 22));
-	private static final String BLANK = EmbeddedStringUtils.BLANK;
+	private static final String BLANK = StringUtils.BLANK;
 
 	static {
 		Map<DateTimeFormatter, String> presetDateFormatMap = new HashMap<>();
@@ -2940,25 +2951,6 @@ public class DateTimeUtils {
 		}
 		public int getEnd() {
 			return end;
-		}
-	}
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// embedded utils
-
-	private static class EmbeddedStringUtils {
-		private static final String BLANK = "";
-		private static final String SPACE_CHARS = "\\s\\u3000";
-
-		private static String trimSpace(String source) {
-			if (source == null || source.isEmpty()) {
-				return source;
-			}
-			return source.replaceAll("^[" + SPACE_CHARS + "]+|[" + SPACE_CHARS + "]+$", BLANK);
-		}
-
-		static boolean isEmpty(String source) {
-			return source == null || trimSpace(source).isEmpty();
 		}
 	}
 

@@ -1,6 +1,7 @@
 package person.scintilla.toolkit.aspect;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.aspectj.lang.JoinPoint;
@@ -16,7 +17,7 @@ import person.scintilla.toolkit.utils.ReflectiveUtils;
 
 /**
  * Requires Z00BaseForm, ReflectiveUtils.
- * @version 0.1.0 2025-9-25
+ * @version 0.1.1 2025-11-03
  */
 @Aspect
 @Component
@@ -28,6 +29,9 @@ public class FormFieldTrimAspect extends BaseAspect {
 		for (Object arg : joinPoint.getArgs()) {
 			if (arg instanceof BaseForm && arg != null) {
 				for (Field field : arg.getClass().getDeclaredFields()) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						continue;
+					}
 					if (field.getType().equals(String.class)) {
 						ReflectiveUtils.setField(arg, field, StringUtils.trimSpace(ReflectiveUtils.getField(arg, field, String.class)));
 					} else if (field.getType().equals(List.class)) {

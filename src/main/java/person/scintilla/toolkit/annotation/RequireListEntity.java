@@ -16,9 +16,9 @@ import person.scintilla.toolkit.validator.ListEntityValidator;
 public @interface RequireListEntity {
 
 	@Deprecated
-	Class<?>[] groups() default {};
-	@Deprecated
 	Class<? extends Payload>[] payload() default {};
+
+	Class<?>[] groups() default {};
 
 	String message() default "${listEmptyErrorCode}";
 

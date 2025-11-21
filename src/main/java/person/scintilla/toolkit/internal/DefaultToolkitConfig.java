@@ -28,6 +28,11 @@ public class DefaultToolkitConfig implements ToolkitConfig {
 	}
 
 	@Override
+	public String getPrefixErrorCode() {
+		return "E000detailPrefix";
+	}
+
+	@Override
 	public String getRepeatErrorCode() {
 		return "EC000A008";
 	}

@@ -9,6 +9,7 @@ public class ToolkitConfigBuilder {
 	private String pageSizePropName = defaultToolkitConfig.getPageSizePropName();
 	private String displayPageCountPropName = defaultToolkitConfig.getDisplayPageCountPropName();
 	private String listEmptyErrorCode = defaultToolkitConfig.getListEmptyErrorCode();
+	private String prefixErrorCode = defaultToolkitConfig.getPrefixErrorCode();
 	private String repeatErrorCode = defaultToolkitConfig.getRepeatErrorCode();
 	private String emptyErrorCode = defaultToolkitConfig.getEmptyErrorCode();
 	private String lengthErrorCode = defaultToolkitConfig.getLengthErrorCode();
@@ -38,6 +39,11 @@ public class ToolkitConfigBuilder {
 
 	public ToolkitConfigBuilder listEmptyErrorCode(String listEmptyErrorCode) {
 		this.listEmptyErrorCode = listEmptyErrorCode;
+		return this;
+	}
+
+	public ToolkitConfigBuilder prefixErrorCode(String prefixErrorCode) {
+		this.prefixErrorCode = prefixErrorCode;
 		return this;
 	}
 
@@ -97,6 +103,11 @@ public class ToolkitConfigBuilder {
 			@Override
 			public String getListEmptyErrorCode() {
 				return listEmptyErrorCode;
+			}
+
+			@Override
+			public String getPrefixErrorCode() {
+				return prefixErrorCode;
 			}
 
 			@Override
